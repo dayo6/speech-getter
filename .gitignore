@@ -1,0 +1,7 @@
+.env
+.venv/
+.venv312/
+__pycache__/
+*.pyc
+intros_*.json
+*_transcript.json
