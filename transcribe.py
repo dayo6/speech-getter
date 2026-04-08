@@ -1,11 +1,13 @@
 import sys
 import os
 import json
+import torch
 import whisperx
 
-DEVICE = "cuda"
-COMPUTE_TYPE = "float16"  # faster on GPU
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+COMPUTE_TYPE = "float16" if DEVICE == "cuda" else "int8"
 MODEL_SIZE = "large-v3"   # best accuracy; use "base" or "medium" for speed
+HF_TOKEN = os.environ.get("HF_TOKEN")
 
 
 def transcribe(file_path):
@@ -13,14 +15,14 @@ def transcribe(file_path):
         print(f"File not found: {file_path}")
         raise SystemExit(1)
 
-    print(f"[1/3] Loading audio from: {file_path}")
+    print(f"[1/4] Loading audio from: {file_path}")
     audio = whisperx.load_audio(file_path)
 
-    print(f"[2/3] Transcribing with Whisper {MODEL_SIZE}...")
+    print(f"[2/4] Transcribing with Whisper {MODEL_SIZE}...")
     model = whisperx.load_model(MODEL_SIZE, DEVICE, compute_type=COMPUTE_TYPE)
     result = model.transcribe(audio, batch_size=16)
 
-    print("[3/3] Aligning words...")
+    print("[3/4] Aligning words...")
     align_model, metadata = whisperx.load_align_model(
         language_code=result["language"], device=DEVICE
     )
@@ -28,6 +30,15 @@ def transcribe(file_path):
         result["segments"], align_model, metadata, audio, DEVICE,
         return_char_alignments=False
     )
+
+    # Speaker diarization
+    if HF_TOKEN:
+        print("[4/4] Identifying speakers...")
+        diarize_model = whisperx.DiarizationPipeline(use_auth_token=HF_TOKEN, device=DEVICE)
+        diarize_segments = diarize_model(audio)
+        result = whisperx.assign_word_speakers(diarize_segments, result)
+    else:
+        print("[4/4] Skipping diarization (no HF_TOKEN in .env)")
 
     # Build output
     segments = []
@@ -39,12 +50,15 @@ def transcribe(file_path):
                 "start": round(w.get("start", 0), 3),
                 "end": round(w.get("end", 0), 3),
             })
-        segments.append({
+        entry = {
             "start": round(seg.get("start", 0), 3),
             "end": round(seg.get("end", 0), 3),
             "text": seg.get("text", "").strip(),
             "words": words,
-        })
+        }
+        if "speaker" in seg:
+            entry["speaker"] = seg["speaker"]
+        segments.append(entry)
 
     output = {
         "source_file": os.path.basename(file_path),
@@ -65,7 +79,8 @@ def transcribe(file_path):
     print(f"{'=' * 60}\n")
 
     for seg in segments:
-        print(f"[{seg['start']:.2f}s - {seg['end']:.2f}s] {seg['text']}")
+        speaker = f" ({seg['speaker']})" if "speaker" in seg else ""
+        print(f"[{seg['start']:.2f}s - {seg['end']:.2f}s]{speaker} {seg['text']}")
         for w in seg["words"]:
             print(f"    {w['start']:7.2f}s - {w['end']:7.2f}s  {w['word']}")
         print()
@@ -76,6 +91,23 @@ def transcribe(file_path):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python transcribe.py <video_or_audio_file>")
+        print("Usage: python transcribe.py <file_or_folder>")
         raise SystemExit(1)
-    transcribe(sys.argv[1])
+
+    target = sys.argv[1]
+    if os.path.isdir(target):
+        audio_exts = {".mp3", ".wav", ".m4a", ".flac", ".ogg", ".opus"}
+        files = sorted(
+            f for f in os.listdir(target)
+            if os.path.splitext(f)[1].lower() in audio_exts
+            and not f.endswith("_transcript.json")
+        )
+        if not files:
+            print(f"No audio/video files found in {target}")
+            raise SystemExit(1)
+        print(f"Found {len(files)} files in {target}\n")
+        for i, fname in enumerate(files, 1):
+            print(f"\n[{i}/{len(files)}] {fname}")
+            transcribe(os.path.join(target, fname))
+    else:
+        transcribe(target)

@@ -23,9 +23,10 @@ def get_top_youtube_url(driver, query):
 def download_video(url, output_dir, filename):
     os.makedirs(output_dir, exist_ok=True)
     output_path = os.path.join(output_dir, f"{filename}.%(ext)s")
+    yt_dlp = os.path.join(os.path.dirname(sys.executable), "yt-dlp")
     subprocess.run([
-        "yt-dlp",
-        "-f", "bestaudio[ext=m4a]/bestaudio/best",
+        yt_dlp,
+        "-x", "--audio-format", "mp3",
         "-o", output_path,
         "--no-playlist",
         url,
