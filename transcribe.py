@@ -3,6 +3,9 @@ import os
 import json
 import torch
 import whisperx
+from dotenv import load_dotenv
+
+load_dotenv()
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 COMPUTE_TYPE = "float16" if DEVICE == "cuda" else "int8"
@@ -37,9 +40,10 @@ def transcribe(file_path):
     # Speaker diarization
     if HF_TOKEN:
         print("[4/4] Identifying speakers...")
-        diarize_model = whisperx.DiarizationPipeline(use_auth_token=HF_TOKEN, device=DEVICE)
+        from whisperx.diarize import DiarizationPipeline, assign_word_speakers
+        diarize_model = DiarizationPipeline(token=HF_TOKEN, device=DEVICE)
         diarize_segments = diarize_model(audio)
-        result = whisperx.assign_word_speakers(diarize_segments, result)
+        result = assign_word_speakers(diarize_segments, result)
     else:
         print("[4/4] Skipping diarization (no HF_TOKEN in .env)")
 
@@ -63,9 +67,13 @@ def transcribe(file_path):
             entry["speaker"] = seg["speaker"]
         segments.append(entry)
 
+    # Build full transcript string
+    full_text = " ".join(seg["text"] for seg in segments if seg["text"])
+
     output = {
         "source_file": os.path.basename(file_path),
         "language": result.get("language", "unknown"),
+        "full_transcript": full_text,
         "segments": segments,
     }
 
