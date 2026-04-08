@@ -20,16 +20,19 @@ def transcribe(file_path):
 
     print(f"[2/4] Transcribing with Whisper {MODEL_SIZE}...")
     model = whisperx.load_model(MODEL_SIZE, DEVICE, compute_type=COMPUTE_TYPE)
-    result = model.transcribe(audio, batch_size=16)
+    result = model.transcribe(audio, batch_size=16, language="en")
 
     print("[3/4] Aligning words...")
-    align_model, metadata = whisperx.load_align_model(
-        language_code=result["language"], device=DEVICE
-    )
-    result = whisperx.align(
-        result["segments"], align_model, metadata, audio, DEVICE,
-        return_char_alignments=False
-    )
+    try:
+        align_model, metadata = whisperx.load_align_model(
+            language_code=result["language"], device=DEVICE
+        )
+        result = whisperx.align(
+            result["segments"], align_model, metadata, audio, DEVICE,
+            return_char_alignments=False
+        )
+    except ValueError as e:
+        print(f"  Alignment skipped: {e}")
 
     # Speaker diarization
     if HF_TOKEN:
@@ -106,8 +109,16 @@ if __name__ == "__main__":
             print(f"No audio/video files found in {target}")
             raise SystemExit(1)
         print(f"Found {len(files)} files in {target}\n")
+        skipped = 0
         for i, fname in enumerate(files, 1):
+            base = os.path.splitext(fname)[0]
+            transcript_path = os.path.join(target, f"{base}_transcript.json")
+            if os.path.exists(transcript_path):
+                skipped += 1
+                continue
             print(f"\n[{i}/{len(files)}] {fname}")
             transcribe(os.path.join(target, fname))
+        if skipped:
+            print(f"\nSkipped {skipped} already transcribed files.")
     else:
         transcribe(target)
