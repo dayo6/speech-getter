@@ -12,40 +12,50 @@ COMPUTE_TYPE = "float16" if DEVICE == "cuda" else "int8"
 MODEL_SIZE = "large-v3"   # best accuracy; use "base" or "medium" for speed
 HF_TOKEN = os.environ.get("HF_TOKEN")
 
+# Load models once
+print(f"Loading Whisper {MODEL_SIZE} on {DEVICE}...")
+whisper_model = whisperx.load_model(MODEL_SIZE, DEVICE, compute_type=COMPUTE_TYPE)
+
+print("Loading alignment model...")
+align_model, align_metadata = whisperx.load_align_model(language_code="en", device=DEVICE)
+
+diarize_model = None
+if HF_TOKEN:
+    print("Loading diarization model...")
+    from whisperx.diarize import DiarizationPipeline, assign_word_speakers
+    diarize_model = DiarizationPipeline(token=HF_TOKEN, device=DEVICE)
+else:
+    print("No HF_TOKEN — diarization disabled.")
+
+print("Models loaded.\n")
+
 
 def transcribe(file_path):
     if not os.path.isfile(file_path):
         print(f"File not found: {file_path}")
         raise SystemExit(1)
 
-    print(f"[1/4] Loading audio from: {file_path}")
+    print(f"  [1/4] Loading audio...")
     audio = whisperx.load_audio(file_path)
 
-    print(f"[2/4] Transcribing with Whisper {MODEL_SIZE}...")
-    model = whisperx.load_model(MODEL_SIZE, DEVICE, compute_type=COMPUTE_TYPE)
-    result = model.transcribe(audio, batch_size=16, language="en")
+    print(f"  [2/4] Transcribing...")
+    result = whisper_model.transcribe(audio, batch_size=16, language="en")
 
-    print("[3/4] Aligning words...")
+    print("  [3/4] Aligning words...")
     try:
-        align_model, metadata = whisperx.load_align_model(
-            language_code=result["language"], device=DEVICE
-        )
         result = whisperx.align(
-            result["segments"], align_model, metadata, audio, DEVICE,
+            result["segments"], align_model, align_metadata, audio, DEVICE,
             return_char_alignments=False
         )
     except ValueError as e:
         print(f"  Alignment skipped: {e}")
 
-    # Speaker diarization
-    if HF_TOKEN:
-        print("[4/4] Identifying speakers...")
-        from whisperx.diarize import DiarizationPipeline, assign_word_speakers
-        diarize_model = DiarizationPipeline(token=HF_TOKEN, device=DEVICE)
+    if diarize_model:
+        print("  [4/4] Identifying speakers...")
         diarize_segments = diarize_model(audio)
         result = assign_word_speakers(diarize_segments, result)
     else:
-        print("[4/4] Skipping diarization (no HF_TOKEN in .env)")
+        print("  [4/4] Skipping diarization")
 
     # Build output
     segments = []
@@ -77,9 +87,9 @@ def transcribe(file_path):
         "segments": segments,
     }
 
-    # Save JSON
-    base = os.path.splitext(file_path)[0]
-    out_path = f"{base}_transcript.json"
+    # Save JSON — put transcript.json in the same directory as the input file
+    parent_dir = os.path.dirname(file_path)
+    out_path = os.path.join(parent_dir, "transcript.json")
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(output, f, indent=2, ensure_ascii=False)
 
@@ -107,26 +117,48 @@ if __name__ == "__main__":
 
     target = sys.argv[1]
     if os.path.isdir(target):
-        audio_exts = {".mp3", ".wav", ".m4a", ".flac", ".ogg", ".opus"}
-        files = sorted(
-            f for f in os.listdir(target)
-            if os.path.splitext(f)[1].lower() in audio_exts
-            and not f.endswith("_transcript.json")
+        # Walk subfolders looking for vocals.wav or audio.mp3 in each clip dir
+        clip_dirs = sorted(
+            d for d in os.listdir(target)
+            if os.path.isdir(os.path.join(target, d))
         )
-        if not files:
-            print(f"No audio/video files found in {target}")
-            raise SystemExit(1)
-        print(f"Found {len(files)} files in {target}\n")
-        skipped = 0
-        for i, fname in enumerate(files, 1):
-            base = os.path.splitext(fname)[0]
-            transcript_path = os.path.join(target, f"{base}_transcript.json")
-            if os.path.exists(transcript_path):
-                skipped += 1
-                continue
-            print(f"\n[{i}/{len(files)}] {fname}")
-            transcribe(os.path.join(target, fname))
-        if skipped:
-            print(f"\nSkipped {skipped} already transcribed files.")
+
+        if clip_dirs:
+            skipped = 0
+            to_process = []
+            for d in clip_dirs:
+                clip_path = os.path.join(target, d)
+                transcript_path = os.path.join(clip_path, "transcript.json")
+                if os.path.exists(transcript_path):
+                    skipped += 1
+                    continue
+                # Prefer vocals.wav, fall back to audio.mp3
+                audio = os.path.join(clip_path, "vocals.wav")
+                if not os.path.exists(audio):
+                    audio = os.path.join(clip_path, "audio.mp3")
+                if os.path.exists(audio):
+                    to_process.append((d, audio))
+
+            if skipped:
+                print(f"Skipping {skipped} already transcribed clips.")
+            if not to_process:
+                print("Nothing to transcribe.")
+                raise SystemExit(0)
+
+            print(f"Found {len(to_process)} clips to transcribe\n")
+            for i, (d, audio) in enumerate(to_process, 1):
+                print(f"\n[{i}/{len(to_process)}] {d}")
+                transcribe(audio)
+
+            print(f"\nDone! Transcribed {len(to_process)} clips.")
+        else:
+            # Fallback: flat folder with audio files
+            audio_exts = {".mp3", ".wav", ".m4a", ".flac", ".ogg", ".opus"}
+            files = sorted(
+                f for f in os.listdir(target)
+                if os.path.splitext(f)[1].lower() in audio_exts
+            )
+            for fname in files:
+                transcribe(os.path.join(target, fname))
     else:
         transcribe(target)

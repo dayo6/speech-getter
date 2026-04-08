@@ -3,5 +3,12 @@
 .venv312/
 __pycache__/
 *.pyc
+
+# Data / outputs
+runs/
+intros_*/
 intros_*.json
-*_transcript.json
+debug_raw_*.txt
+*.mp3
+*.wav
+models/

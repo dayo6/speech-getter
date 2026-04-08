@@ -1,6 +1,7 @@
 import os
 import json
 import re
+import argparse
 from datetime import datetime
 import requests
 from dotenv import load_dotenv
@@ -40,12 +41,7 @@ DO NOT write out exact quotes — you will get them wrong. Instead, describe the
 EVERYTHING should be related to: street life, gang culture, drugs, cartels, prison, hustle, survival,
 the barrio, loyalty, betrayal, power, violence, or similar themes fitting for a dark hip hop channel.
 
-SOURCE TYPES to pull from (use ALL of these, not just movies):
-- **Movies**: Blood In Blood Out, American Me, Training Day, Mi Vida Loca, Scarface, Boyz n the Hood,
-  Colors, Menace II Society, End of Watch, Harsh Times, The Tax Collector, Sicario, City of God,
-  New Jack City, Carlito's Way, A Prophet, Shot Caller, Felon, Animal Factory, Blow
-- **TV Shows**: Breaking Bad, Narcos, Queen of the South, Mayans M.C., Sons of Anarchy,
-  Snowfall, Power, Oz, The Wire, Top Boy
+Example SOURCE TYPES to pull from:
 - **Documentaries**: LA gang documentaries, cartel docs, prison docs, drug trade docs, hood docs,
   Crips & Bloods: Made in America, Sin Nombre, LA Originals, The Mexican Mafia
 - **Interviews**: Street rappers and OGs on Vlad TV, No Jumper, Bootleg Kev, Million Dollaz Worth of Game,
@@ -55,13 +51,40 @@ SOURCE TYPES to pull from (use ALL of these, not just movies):
 - **Meme clips**: viral street moments, hood memes, iconic threatening one-liners that became memes,
   viral police chase clips, news reporter in the hood moments
 - **News & speeches**: news reports on LA gangs, cartel busts, drug raids, prison riots, street protests
+- **Movies**: Blood In Blood Out, American Me, Training Day, Mi Vida Loca, Scarface, Boyz n the Hood,
+  Colors, Menace II Society, End of Watch, Harsh Times, The Tax Collector, Sicario, City of God,
+  New Jack City, Carlito's Way, A Prophet, Shot Caller, Felon, Animal Factory, Blow
+- **TV Shows**: Breaking Bad, Narcos, Queen of the South, Mayans M.C., Sons of Anarchy,
+  Snowfall, Power, Oz, The Wire, Top Boy
+
+What makes a perfect beat intro moment:
+
+TONE — Raw street-level authenticity, NOT cinematic polish:
+- Should sound like a voice note, a studio conversation, or someone talking real shit to their people.
+- Loose, conversational grammar. Verbal fillers that add rhythm ("you feel me", "straight up", "on God") are GOOD.
+- Unscripted energy — plain-spoken but heavy truths. Nothing that feels like movie-script dialogue.
+
+TWO STYLES TO LOOK FOR:
+1. "Daily Reminder" (Street Wisdom) — direct real-talk advice about the game, loyalty, haters, survival.
+   Short punchy statements followed by a confirmation ("keep winning", "you feel me?", "that's on everything").
+2. "Street Anecdote" (Storytelling) — first-person story or philosophy of violence/power/hustle.
+   Raw, blunt, ends on a high-energy mic-drop moment.
+
+STRUCTURE:
+- 2-4 sentences max. Short, punchy, staccato syntax — no complex conjunctions.
+- Prefer words with heavy hard consonants (D, K, T, P), especially as last words — they hit harder on a beat.
+- Start in the middle of a thought — no introductory fluff, no "I think", no "let me tell you".
+
+THEME:
+- Ambition, inevitability, betrayal, the cost of power, silence over noise, the hunt.
+- NO jokes, puns, cliches about "working hard", or upbeat energy.
 
 The vibe should be one of:
 - **DARK**: menacing, threatening, cold, raw street energy, cartel power, prison hardness, survival mode
 - **MEME**: viral hood moments, street humor with an edge, iconic clips that are funny but still grimy
 
 Rules:
-- The moment should be short (under 15 seconds of dialogue) and hit hard with no context needed.
+- The moment should be short (14-21 seconds of dialogue) and hit hard with no context needed.
 - Use a DIFFERENT source for each suggestion.
 - Give me a MIX across all source types — not just movies.
 - Keep it dark and street. No soft, wholesome, or family-friendly content.
@@ -89,13 +112,13 @@ response = requests.post(
         "Content-Type": "application/json",
     },
     json={
-        "model": "deepseek/deepseek-chat-v3-0324",
+        "model": "qwen/qwq-32b",
         "messages": [
             {"role": "system", "content": "You are a JSON API. Respond ONLY in valid English JSON. Never use non-English characters. Never use Chinese, Japanese, Korean, or any non-ASCII characters in your output."},
             {"role": "user", "content": PROMPT},
         ],
-        "temperature": 0.7,
-        "max_tokens": 8000,
+        "temperature": 0.6,
+        "max_tokens": 16000,
     },
 )
 
@@ -111,6 +134,10 @@ raw_path = f"debug_raw_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
 with open(raw_path, "w", encoding="utf-8") as f:
     f.write(content)
 print(f"[*] Raw response saved to {raw_path}")
+
+# Strip R1 reasoning block (everything inside <think>...</think>)
+if "<think>" in content:
+    content = re.sub(r'<think>.*?</think>', '', content, flags=re.DOTALL)
 
 # Strip markdown code fences if the model wraps them anyway
 content = content.strip()
@@ -144,9 +171,14 @@ except json.JSONDecodeError:
     print(f"Failed to parse JSON. Raw response saved to {raw_path}")
     raise SystemExit(1)
 
-# Save to file with timestamp
+# Parse output flag
+parser = argparse.ArgumentParser()
+parser.add_argument("--output", "-o", type=str, default=None, help="Output file path")
+args = parser.parse_args()
+
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-output_file = f"intros_{timestamp}.json"
+output_file = args.output or f"intros_{timestamp}.json"
+os.makedirs(os.path.dirname(output_file) or ".", exist_ok=True)
 with open(output_file, "w", encoding="utf-8") as f:
     json.dump(suggestions, f, indent=2, ensure_ascii=False)
 
