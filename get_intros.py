@@ -12,98 +12,48 @@ OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
 if not OPENROUTER_API_KEY:
     OPENROUTER_API_KEY = input("Enter your OpenRouter API key: ").strip()
 
-# ── Load previous suggestions to avoid repeats ──────────────
-previous = []
-for f in sorted(os.listdir(".")):
-    if f.startswith("intros_") and f.endswith(".json"):
-        with open(f, "r", encoding="utf-8") as fh:
-            try:
-                previous.extend(json.load(fh))
-            except json.JSONDecodeError:
-                pass
 
-already_used = ""
-if previous:
-    scenes = [f"{s.get('source_title', s.get('source', ''))}: {s.get('scene_description', '')}" for s in previous]
-    already_used = "\n\nALREADY USED — same source is OK, but do NOT repeat any of these specific scenes/moments:\n"
-    for scene in scenes:
-        already_used += f"- {scene}\n"
-    print(f"[*] Found {len(previous)} previous suggestions — will avoid repeating the same scenes.\n")
+PROMPT = """You are a YouTube search query generator for a dark Chicano type beat producer.
 
-PROMPT = """You are a music research assistant for a dark west coast Chicano type beat producer.
+I need YouTube search queries that will surface videos containing raw, unfiltered speech
+that would work as intro samples over dark, aggressive beats.
 
-I need suggestions for SCENES and MOMENTS from real media that would work as intro speeches over
-dark, aggressive, street hip hop beats. Think: Chicano gangster rap, west coast G-funk, dark trap.
-I will look up the actual clips myself — your job is to point me to the right moments so I can find the real audio.
+I'm NOT looking for specific videos — I want SEARCH QUERIES that I can paste into YouTube
+to find the kind of content I need. The more specific and creative the query, the better.
 
-DO NOT write out exact quotes — you will get them wrong. Instead, describe the scene and what is said in it.
+CONTENT I'M LOOKING FOR:
+- Real altercations, confrontations, arguments, and heated moments caught on camera.
+- Livestream rants, IG live beefs, Facebook live arguments, studio sessions with wild talk.
+- Chicano/Latino rap artists talking shit, going off, or confronting people.
+- Hood viral moments — someone getting checked, called out, or going crazy on camera.
+- NO movies, NO TV shows, NO music, NO scripted content.
 
-EVERYTHING should be related to: street life, gang culture, drugs, cartels, prison, hustle, survival,
-the barrio, loyalty, betrayal, power, violence, or similar themes fitting for a dark hip hop channel.
+WHAT MAKES A GOOD SEARCH QUERY:
+- Specific enough to surface niche content, not generic results
+- Includes modifiers: "confronts", "IG live", "heated", "argument", "fight", "calls out"
+- Targets specific scenes: someone getting confronted, an artist going off in the studio,
+  a heated exchange between two people, someone ranting about opps/fakes/snitches
 
-Example SOURCE TYPES to pull from:
-- **Documentaries**: LA gang documentaries, cartel docs, prison docs, drug trade docs, hood docs,
-  Crips & Bloods: Made in America, Sin Nombre, LA Originals, The Mexican Mafia
-- **Interviews**: Street rappers and OGs on Vlad TV, No Jumper, Bootleg Kev, Million Dollaz Worth of Game,
-  Big Boy TV, Soft White Underbelly, street interviews about gang life / drug game / prison
-- **Song intros / skits**: spoken word intros from Cypress Hill, Kid Frost, SPM, Brownside, Mr. Capone-E,
-  Conejo, Tupac, Snoop Dogg, Ice Cube, NWA, Mobb Deep, Immortal Technique
-- **Meme clips**: viral street moments, hood memes, iconic threatening one-liners that became memes,
-  viral police chase clips, news reporter in the hood moments
-- **News & speeches**: news reports on LA gangs, cartel busts, drug raids, prison riots, street protests
-- **Movies**: Blood In Blood Out, American Me, Training Day, Mi Vida Loca, Scarface, Boyz n the Hood,
-  Colors, Menace II Society, End of Watch, Harsh Times, The Tax Collector, Sicario, City of God,
-  New Jack City, Carlito's Way, A Prophet, Shot Caller, Felon, Animal Factory, Blow
-- **TV Shows**: Breaking Bad, Narcos, Queen of the South, Mayans M.C., Sons of Anarchy,
-  Snowfall, Power, Oz, The Wire, Top Boy
+CATEGORIES TO COVER (generate queries across ALL of these):
+- Hood altercations and confrontations caught on camera
+- Instagram/Facebook live beefs, rants, and arguments
+- Chicano rap artists talking wild in studios, interviews, or livestreams
+- Someone getting checked/pressed/called out on camera
+- Viral hood moments — heated exchanges, someone going crazy
+- Gang-related confrontations and callouts
+- Studio session reactions — artists/producers reacting to hard beats
+- Street arguments that went viral
+- People ranting about snitches, fakes, opps, haters
 
-What makes a perfect beat intro moment:
-
-TONE — Raw street-level authenticity, NOT cinematic polish:
-- Should sound like a voice note, a studio conversation, or someone talking real shit to their people.
-- Loose, conversational grammar. Verbal fillers that add rhythm ("you feel me", "straight up", "on God") are GOOD.
-- Unscripted energy — plain-spoken but heavy truths. Nothing that feels like movie-script dialogue.
-
-TWO STYLES TO LOOK FOR:
-1. "Daily Reminder" (Street Wisdom) — direct real-talk advice about the game, loyalty, haters, survival.
-   Short punchy statements followed by a confirmation ("keep winning", "you feel me?", "that's on everything").
-2. "Street Anecdote" (Storytelling) — first-person story or philosophy of violence/power/hustle.
-   Raw, blunt, ends on a high-energy mic-drop moment.
-
-STRUCTURE:
-- 2-4 sentences max. Short, punchy, staccato syntax — no complex conjunctions.
-- Prefer words with heavy hard consonants (D, K, T, P), especially as last words — they hit harder on a beat.
-- Start in the middle of a thought — no introductory fluff, no "I think", no "let me tell you".
-
-THEME:
-- Ambition, inevitability, betrayal, the cost of power, silence over noise, the hunt.
-- NO jokes, puns, cliches about "working hard", or upbeat energy.
-
-The vibe should be one of:
-- **DARK**: menacing, threatening, cold, raw street energy, cartel power, prison hardness, survival mode
-- **MEME**: viral hood moments, street humor with an edge, iconic clips that are funny but still grimy
-
-Rules:
-- The moment should be short (14-21 seconds of dialogue) and hit hard with no context needed.
-- Use a DIFFERENT source for each suggestion.
-- Give me a MIX across all source types — not just movies.
-- Keep it dark and street. No soft, wholesome, or family-friendly content.
-- Only suggest scenes you are confident actually exist.
-- IMPORTANT: Only suggest moments that are likely to be findable on YouTube. If a clip probably isn't on YouTube, skip it.
-
-Respond ONLY with a valid JSON array. No markdown, no code fences, no explanation — just the JSON.
-Each object in the array must have these fields:
+Respond ONLY with a valid JSON array of objects. No markdown, no code fences.
+Each object must have:
 {
-  "source_title": "the EXACT official title — e.g. 'Blood In Blood Out' not 'blood in blood out movie', 'Breaking Bad S4E13 - Face Off' not just 'Breaking Bad', include year for movies (e.g. 'Scarface (1983)'), season/episode for TV, full doc title, full interview title or channel + guest + upload title, full song name + artist, full speech name",
-  "type": "Movie | TV | Documentary | Interview | Stand-up | Song Intro | Speech | Meme",
-  "speaker": "character name AND actor real name for fiction (e.g. 'Alonzo Harris (Denzel Washington)'), or just real name for non-fiction",
-  "scene_description": "describe what happens and what is said — NOT an exact quote",
-  "youtube_search": "a specific YouTube search query I can paste to find this exact clip (e.g. 'Blood In Blood Out Miklo prison speech scene')",
-  "vibe": "DARK | MEME",
-  "why_it_works": "one sentence on why it slaps as a beat intro"
+  "query": "the exact YouTube search query to paste",
+  "category": "what kind of content this should surface",
+  "why": "what kind of speech/moment this query should find"
 }
 
-Give me 20 suggestions.""" + already_used
+Give me 30 search queries."""
 
 response = requests.post(
     "https://openrouter.ai/api/v1/chat/completions",
@@ -112,13 +62,13 @@ response = requests.post(
         "Content-Type": "application/json",
     },
     json={
-        "model": "qwen/qwq-32b",
+        "model": "google/gemini-2.5-flash",
         "messages": [
-            {"role": "system", "content": "You are a JSON API. Respond ONLY in valid English JSON. Never use non-English characters. Never use Chinese, Japanese, Korean, or any non-ASCII characters in your output."},
+            {"role": "system", "content": "You are a JSON API. Respond ONLY in valid English JSON. No markdown, no explanation."},
             {"role": "user", "content": PROMPT},
         ],
-        "temperature": 0.6,
-        "max_tokens": 16000,
+        "temperature": 0.8,
+        "max_tokens": 8000,
     },
 )
 
@@ -135,23 +85,26 @@ with open(raw_path, "w", encoding="utf-8") as f:
     f.write(content)
 print(f"[*] Raw response saved to {raw_path}")
 
-# Strip R1 reasoning block (everything inside <think>...</think>)
+# Strip reasoning blocks
 if "<think>" in content:
     content = re.sub(r'<think>.*?</think>', '', content, flags=re.DOTALL)
 
-# Strip markdown code fences if the model wraps them anyway
+# Strip markdown code fences
 content = content.strip()
 if content.startswith("```"):
-    # Remove first line (```json or ```)
     content = content.split("\n", 1)[1]
 if content.endswith("```"):
     content = content.rsplit("```", 1)[0]
 content = content.strip()
 
-# Strip non-ASCII characters (DeepSeek sometimes injects Chinese chars)
+# Replace non-ASCII
+content = content.replace('\u2018', "'").replace('\u2019', "'")
+content = content.replace('\u201c', '"').replace('\u201d', '"')
+content = content.replace('\u2014', '-').replace('\u2013', '-')
+content = content.replace('\u2026', '...')
 content = re.sub(r'[^\x00-\x7F]+', '', content)
 
-# Try to extract JSON array if model added extra text
+# Extract JSON array
 if not content.startswith("["):
     start = content.find("[")
     if start != -1:
@@ -163,13 +116,25 @@ if not content.endswith("]"):
 
 try:
     suggestions = json.loads(content)
-except json.JSONDecodeError:
-    # Save raw response for debugging
+except json.JSONDecodeError as e:
     raw_path = f"debug_raw_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
     with open(raw_path, "w", encoding="utf-8") as f:
         f.write(content)
-    print(f"Failed to parse JSON. Raw response saved to {raw_path}")
+    print(f"Failed to parse JSON: {e}")
+    print(f"Processed content saved to {raw_path}")
     raise SystemExit(1)
+
+# Convert to the format download_clips.py expects
+# Each query becomes a "suggestion" with youtube_search field
+intros = []
+for i, s in enumerate(suggestions, 1):
+    intros.append({
+        "youtube_search": s.get("query", ""),
+        "source_title": s.get("query", f"query_{i}")[:60],
+        "type": s.get("category", ""),
+        "vibe": "DARK",
+        "why_it_works": s.get("why", ""),
+    })
 
 # Parse output flag
 parser = argparse.ArgumentParser()
@@ -180,18 +145,15 @@ timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 output_file = args.output or f"intros_{timestamp}.json"
 os.makedirs(os.path.dirname(output_file) or ".", exist_ok=True)
 with open(output_file, "w", encoding="utf-8") as f:
-    json.dump(suggestions, f, indent=2, ensure_ascii=False)
+    json.dump(intros, f, indent=2, ensure_ascii=False)
 
 # Print summary
-print(f"\nSaved {len(suggestions)} suggestions to {output_file}\n")
-for i, s in enumerate(suggestions, 1):
-    vibe = s.get("vibe", "?")
-    source = s.get("source_title", "?")
-    stype = s.get("type", "?")
-    speaker = s.get("speaker", "?")
-    yt = s.get("youtube_search", "?")
-    print(f"  {i:2}. [{vibe}] {source} ({stype})")
-    print(f"      Speaker: {speaker}")
-    print(f"      YouTube: {yt}")
-    print(f"      {s.get('scene_description', '')}")
+print(f"\nSaved {len(intros)} search queries to {output_file}\n")
+for i, s in enumerate(intros, 1):
+    query = s.get("youtube_search", "?")
+    category = s.get("type", "?")
+    why = s.get("why_it_works", "")
+    print(f"  {i:2}. [{category}]")
+    print(f"      Query: {query}")
+    print(f"      Why: {why}")
     print()

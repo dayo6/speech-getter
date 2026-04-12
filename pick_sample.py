@@ -9,25 +9,26 @@ from dotenv import load_dotenv
 load_dotenv()
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
-MODEL = "qwen/qwq-32b"
+MODEL = "deepseek/deepseek-v3.2"
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
 if not OPENROUTER_API_KEY:
     OPENROUTER_API_KEY = input("Enter your OpenRouter API key: ").strip()
 
 
 def format_transcript(transcript):
-    """Format transcript into a clear readable format for the LLM (no timestamps)."""
+    """Format transcript with timestamps so the LLM can calculate duration."""
     lines = []
     current_speaker = None
 
     for seg in transcript["segments"]:
         speaker = seg.get("speaker", "Unknown")
+        timestamp = f"[{seg['start']:.1f}s - {seg['end']:.1f}s]"
 
         if speaker != current_speaker:
             current_speaker = speaker
             lines.append(f"\n{speaker}:")
 
-        lines.append(f"  \"{seg['text']}\"")
+        lines.append(f"  {timestamp} \"{seg['text']}\"")
 
     return "\n".join(lines)
 
@@ -108,8 +109,20 @@ def pick_samples(transcript_path):
         clip_duration = segments[-1]["end"] - segments[0]["start"]
     else:
         clip_duration = 0
+
+    # Skip empty or near-empty transcripts
+    if not segments or clip_duration < 10:
+        print(f"  SKIPPED — transcript too short ({clip_duration:.0f}s)")
+        return None
+
     SECONDS_PER_PICK = 300  # 1 pick per 5 minutes
-    max_picks = max(2, int(clip_duration / SECONDS_PER_PICK))
+    max_picks = max(2, min(7, int(clip_duration / SECONDS_PER_PICK)))
+
+    # Truncate long transcripts to fit context window (~50k tokens ≈ 200k chars)
+    MAX_TRANSCRIPT_CHARS = 180000
+    if len(formatted) > MAX_TRANSCRIPT_CHARS:
+        formatted = formatted[:MAX_TRANSCRIPT_CHARS] + "\n\n[TRANSCRIPT TRUNCATED]"
+        print(f"  WARNING: Transcript truncated from {len(formatted)} chars to {MAX_TRANSCRIPT_CHARS}")
 
     print(f"\n  Transcript preview:\n{formatted[:500]}...")
     print(f"  Clip duration: {clip_duration:.0f}s — picking {max_picks} samples\n")
@@ -124,29 +137,49 @@ You MUST find exactly {max_picks} samples from it. Spread your picks across the 
 
 What makes a great beat intro sample:
 
-TONE — Raw street-level authenticity, NOT cinematic polish:
-- Should sound like a voice note, a studio conversation, or someone talking real shit to their people.
-- Loose, conversational grammar. Verbal fillers that add rhythm ("you feel me", "straight up", "on God") are GOOD.
-- Unscripted energy — plain-spoken but heavy truths. No movie-script dialogue.
+TONE:
+- Someone talking real shit. Raw, aggressive, unfiltered.
+- Loose grammar, verbal fillers that add rhythm ("you feel me", "straight up", "on God") are GOOD.
+- Do NOT censor or clean up any language — quote it exactly as-is, including profanity.
+- Yelling is GREAT. Heated is GREAT.
 
-TWO STYLES TO LOOK FOR:
-1. "Daily Reminder" (Street Wisdom) — direct real-talk advice about the game, loyalty, haters, survival.
-   Short punchy statements followed by a confirmation ("keep winning", "you feel me?", "that's on everything").
-2. "Street Anecdote" (Storytelling) — first-person story or philosophy of violence/power/hustle.
-   Raw, blunt, ends on a high-energy mic-drop moment.
+STYLES TO LOOK FOR:
+1. Graphic first-person accounts of violence. Describing what happened in detail,
+   not metaphor. Specifics about weapons, consequences, what it looked like. Blood, bodies, aftermath.
+2. Specific, detailed, visceral threats. NOT vague "I'll get you" — graphic, personal,
+   describing exactly what will happen. The more specific, the harder it hits.
+3. "The Daily Reminder" — the speaker addresses the listener directly as "you."
+   Hood wisdom about haters, fakes, the game, survival. Status update from the streets.
+4. "Paranoia / Surveillance" — being watched, followed, "they're at the door", weapons ready.
+5. "The Co-sign" — reacting to something hard in real-time. "This shit crazy." "That's disrespectful."
+6. "The Confrontation" — face-to-face beef, someone getting checked, the moment right before it pops off.
+   "Say it to my face." "What you gonna do about it?" One person dominating the other.
+   Caught-on-camera energy, real beef, real stakes. Only use the dominant speaker's lines.
+
+THE RAW FRAGMENT — do NOT look for complete stories:
+- Look for a single heavy thought that starts abruptly and ends feeling cut off.
+- No build-up, no narrative arc. Just raw input — a fragment of something real.
 
 STRUCTURE:
 - 2-5 sentences max. Short, punchy, staccato syntax — no complex conjunctions.
-- Prefer words with heavy hard consonants (D, K, T, P) — they hit harder on a beat.
+- Prefer words with cacophony or heavy hard consonants (D, K, T, P), especially as last words.
 - Start in the middle of a thought — no introductory fluff, no "I think", no "let me tell you".
 
+THE FOUR CONTENT NOTES — every great pick hits one of these:
+1. THE WARNING — specific, graphic threats. Not "don't play with me" — describe exactly what happens next.
+2. THE HUSTLE/PRICE — what it cost to get here. Blood, jail, bodies, loss. Earned authority through violence.
+3. THE MOCKERY — laughing at people who got handled. "Where he at now?" Disrespecting the fallen.
+4. THE VIOLENCE — graphic, specific, visceral. Describing what happened or what will happen in detail.
+   Blood, weapons, consequences. The more specific, the better. Not metaphorical — literal.
+
 THEME:
-- Ambition, inevitability, betrayal, the cost of power, silence over noise, the hunt.
-- NO jokes, puns, cliches about "working hard", or upbeat energy.
-- Must work as a standalone moment — zero context needed.
+- Graphic violence — blood, bodies, weapons, consequences. First-person accounts of violent encounters.
+- Ambition, inevitability, betrayal, the cost of power, silence over noise, domination.
+- Paranoia, surveillance, being watched, weapons ready.
+- Must work as a standalone fragment — zero context needed.
 
 Rules:
-- Each sample should be 2-5 sentences long and succinct.
+- IMPORTANT: Each sample MUST be between 14-23 seconds long. Calculate this by subtracting the first word's timestamp from the last word's timestamp. If it's under 14s or over 23s, adjust your selection.
 - Each pick MUST work as a standalone moment — if it needs context to make sense, skip it.
 - Prefer a single speaker.
 - Quote the text EXACTLY as it appears in the transcript — do not paraphrase or reword.
@@ -176,22 +209,39 @@ Respond ONLY with a valid JSON array, no markdown, no code fences:
                 {"role": "user", "content": prompt},
             ],
             "temperature": 0.6,
-            "max_tokens": 16000,
+            "max_tokens": 8000,
+            "provider": {
+                "ignore": ["Azure"],
+            },
         },
-        timeout=300,
+        timeout=600,
     )
 
     if response.status_code != 200:
         print(f"Error {response.status_code}: {response.text}")
         raise SystemExit(1)
 
-    content = response.json()["choices"][0]["message"]["content"].strip()
+    resp_data = response.json()
+    msg = resp_data.get("choices", [{}])[0].get("message", {})
+    content = msg.get("content")
+    # R1 sometimes returns reasoning_content separately
+    if not content:
+        content = msg.get("reasoning_content") or msg.get("reasoning") or ""
+    if not content:
+        print(f"  SKIPPED — empty response from LLM")
+        print(f"  Response: {str(resp_data)[:500]}")
+        return None
+    content = content.strip()
 
     # Strip R1 reasoning block
     if "<think>" in content:
         content = re.sub(r'<think>.*?</think>', '', content, flags=re.DOTALL)
 
-    # Strip non-ASCII characters (R1 sometimes injects Chinese chars)
+    # Replace common non-ASCII with ASCII equivalents, then strip the rest
+    content = content.replace('\u2018', "'").replace('\u2019', "'")
+    content = content.replace('\u201c', '"').replace('\u201d', '"')
+    content = content.replace('\u2014', '-').replace('\u2013', '-')
+    content = content.replace('\u2026', '...')
     content = re.sub(r'[^\x00-\x7F]+', '', content)
 
     # Strip markdown code fences
@@ -253,7 +303,7 @@ Respond ONLY with a valid JSON array, no markdown, no code fences:
         print(f"\n  #{i} [{rating}/10] ({duration:.1f}s)")
         print(f"  {pick['start']:.2f}s - {pick['end']:.2f}s")
         print(f"  \"{pick['text']}\"")
-        print(f"  Why: {pick['why']}")
+        print(f"  Why: {pick.get('why', 'N/A')}")
     print(f"\n{'=' * 60}")
     print(f"  Saved {len(picks)} samples for {source_file}\n")
 

@@ -6,6 +6,10 @@ __pycache__/
 
 # Data / outputs
 runs/
+old_runs/
+danielwsp_speeches/
+bgutil-ytdlp-pot-provider/
+download_archive.txt
 intros_*/
 intros_*.json
 debug_raw_*.txt
