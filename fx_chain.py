@@ -29,6 +29,7 @@ from pedalboard import (
     Reverb,
     Limiter,
     Gain,
+    PitchShift,
 )
 from pedalboard.io import AudioFile
 
@@ -105,6 +106,9 @@ def apply_fx(input_path, output_path=None):
 
     # FX Chain
     board = Pedalboard([
+        # 0. Pitch down 2 semitones
+        PitchShift(semitones=-2),
+
         # 1. Aggressive radio filter — tighter than full range, wider than telephone
         HighpassFilter(cutoff_frequency_hz=250),
         LowpassFilter(cutoff_frequency_hz=2800),

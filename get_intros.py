@@ -28,23 +28,15 @@ CONTENT I'M LOOKING FOR:
 - Livestream rants, IG live beefs, Facebook live arguments, studio sessions with wild talk.
 - Anti-police sentiment — people going off on cops, disrespecting law enforcement,
   confronting officers, ranting about crooked police, "fuck 12" energy.
-- Rival gang disrespect — talking down on opps, mocking rivals, disrespecting enemies.
+- Rivals disrespected — talking down on opps, mocking rivals, disrespecting enemies.
 - Hood viral moments — someone getting checked, called out, or going crazy on camera.
 - NO movies, NO TV shows, NO music, NO scripted content.
 
 WHAT MAKES A GOOD SEARCH QUERY:
 - Specific enough to surface niche content, not generic results
 - Includes modifiers: "confronts", "IG live", "heated", "argument", "fight", "calls out"
-- Targets specific scenes: someone getting confronted, an artist going off in the studio,
-  a heated exchange between two people, someone ranting about opps/fakes/snitches/cops
-
-SURENO RAPPERS TO USE IN QUERIES (use these names to build targeted searches — interviews, lives, beefs, studio sessions):
-949PAYA$0, WsLoc, Lil Travieso, Lefty Gunplay, Yung Raq, Chito Rana$, Lil Cuete, Silencer,
-Dro Ralph Lauren, Mr. Capone-E, Mr. Criminal, Mr. Sancho, Ms. Sancha, Royal-T, Mr. Shadow,
-OG PlayBoy, Conejo, Joka Boy, Lo Boy, Biggie, Sad Boy, Ms Krazie, Smiley Lowks, Demon Tha Don,
-Creeper, Dusty, Shakewell, Duende, Lil Rob, GANGSTA L, Swifty Blue, Toker from Brownside,
-Wicked from Brownside, King Lil G, Young Dopey, Silent200, Smiley Lokz, Bugzy, T-Dre,
-Delux, Cali Life Style, SURZEE
+- Targets specific scenes, including but not excluded to: someone getting confronted, someone going off in the studio,
+  a heated exchange, someone ranting about opps/fakes/snitches/cops
 
 CATEGORIES TO COVER (generate queries across ALL of these — at least HALF should be Chicano/Sureno specific):
 - Chicano/Sureno rap artists from the list above — interviews, IG lives, beefs, studio sessions, confrontations

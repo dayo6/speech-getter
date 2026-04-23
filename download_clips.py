@@ -148,6 +148,18 @@ def main():
                     except json.JSONDecodeError:
                         pass
 
+                # Rename folder to match actual video title if we got metadata
+                actual_title = video_meta.get("video_title", "")
+                if actual_title:
+                    actual_name = f"{i:02d}_{actual_title}"
+                    actual_name = "".join(c if c.isalnum() or c in " _-" else "_" for c in actual_name)[:80]
+                    actual_dir = os.path.join(output_dir, actual_name)
+                    if actual_dir != clip_dir and not os.path.exists(actual_dir):
+                        if os.path.exists(clip_dir):
+                            os.rename(clip_dir, actual_dir)
+                        clip_dir = actual_dir
+                        safe_name = actual_name
+
                 print(f"      Downloading...")
                 download_video(url, clip_dir, "audio")
                 save_to_archive(vid_id)

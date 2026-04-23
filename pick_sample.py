@@ -158,12 +158,6 @@ You MUST find exactly {max_picks} samples from it. Spread your picks across the 
 
 What makes a great beat intro sample:
 
-SURENO RAPPERS (if any of these artists appear in the transcript, PRIORITIZE their lines):
-949PAYA$0, WsLoc, Lil Travieso, Lefty Gunplay, Yung Raq, Chito Rana$, Lil Cuete, Silencer,
-Dro Ralph Lauren, Mr. Capone-E, Mr. Criminal, Mr. Sancho, Mr. Shadow, OG PlayBoy, Conejo,
-Sad Boy, Ms Krazie, Smiley Lowks, Demon Tha Don, Swifty Blue, King Lil G, Young Dopey,
-Toker from Brownside, Lil Rob, GANGSTA L, Cali Life Style, SURZEE, Bugzy, Duende, Dusty
-
 TONE:
 - Someone talking real shit. Raw, aggressive, unfiltered. Chicano/Sureno energy is ideal.
 - Loose grammar, verbal fillers that add rhythm ("you feel me", "straight up", "on God", "simon", "orale") are GOOD.
@@ -171,9 +165,9 @@ TONE:
 - Yelling is GREAT. Heated is GREAT.
 - Anti-cop lines are GREAT — "fuck 12", disrespecting police, going off on law enforcement.
 - Dissing rival gangs, mocking opps, talking down on enemies is GREAT.
-- Cops should NEVER be portrayed positively. If a cop is speaking, only pick lines where they sound aggressive/threatening (makes them look bad).
+- Cops should NEVER be portrayed positively. If a cop is speaking, only pick lines where they sound weak.
 
-STYLES TO LOOK FOR:
+STYLES TO LOOK FOR, but not excluded to:
 1. Graphic first-person accounts of violence. Describing what happened in detail,
    not metaphor. Specifics about weapons, consequences, what it looked like. Blood, bodies, aftermath.
 2. Specific, detailed, visceral threats. NOT vague "I'll get you" — graphic, personal,
@@ -194,24 +188,24 @@ THE RAW FRAGMENT — do NOT look for complete stories:
 
 STRUCTURE:
 - 2-5 sentences max. Short, punchy, staccato syntax — no complex conjunctions.
-- Prefer words with cacophony or heavy hard consonants (D, K, T, P), especially as last words.
+- Prefer words with cacophony or heavy hard consonants (D, C, K, T, P,), especially as last words.
 - Start in the middle of a thought — no introductory fluff, no "I think", no "let me tell you".
 
 THE FOUR CONTENT NOTES — every great pick hits one of these:
 1. THE WARNING — specific, graphic threats. Not "don't play with me" — describe exactly what happens next.
 2. THE HUSTLE/PRICE — what it cost to get here. Blood, jail, bodies, loss. Earned authority through violence.
-3. THE MOCKERY — laughing at people who got handled. "Where he at now?" Disrespecting the fallen.
+3. THE MOCKERY — laughing at people who got handled. Disrespecting the fallen.
 4. THE VIOLENCE — graphic, specific, visceral. Describing what happened or what will happen in detail.
    Blood, weapons, consequences. The more specific, the better. Not metaphorical — literal.
 
 THEME:
 - Graphic violence — blood, bodies, weapons, consequences. First-person accounts of violent encounters.
-- Ambition, inevitability, betrayal, the cost of power, silence over noise, domination.
+- Threatening: domination, mockery, and disrespect.
+- Ambition, inevitability, betrayal, the cost of power, silence over noise.
 - Paranoia, surveillance, being watched, weapons ready.
 - Must work as a standalone fragment — zero context needed.
 
 Rules:
-- IMPORTANT: Each sample MUST be between 14-23 seconds long. Calculate this by subtracting the first word's timestamp from the last word's timestamp. If it's under 14s or over 23s, adjust your selection.
 - Each pick MUST work as a standalone moment — if it needs context to make sense, skip it.
 - Prefer a single speaker.
 - Quote the text EXACTLY as it appears in the transcript — do not paraphrase or reword.

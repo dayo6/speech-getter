@@ -45,6 +45,9 @@ def extract_clips_from_dir(clip_dir):
                 continue
 
             clip = audio[start_ms:end_ms]
+            # Add silence tail so reverb/delay in FX chain can decay naturally
+            tail_ms = 1500
+            clip = clip + AudioSegment.silent(duration=tail_ms, frame_rate=clip.frame_rate)
             clip.export(output_path, format="mp3")
             print(f"  Exported: {output_name}")
             extracted += 1
