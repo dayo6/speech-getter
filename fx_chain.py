@@ -32,7 +32,7 @@ from pedalboard import (
 )
 from pedalboard.io import AudioFile
 
-TARGET_LUFS = -13.5
+TARGET_LUFS = -18.0
 TRUE_PEAK_DB = -1.0
 SAMPLE_RATE = 44100
 
@@ -107,7 +107,7 @@ def apply_fx(input_path, output_path=None):
     board = Pedalboard([
         # 1. Aggressive radio filter — tighter than full range, wider than telephone
         HighpassFilter(cutoff_frequency_hz=250),
-        LowpassFilter(cutoff_frequency_hz=5000),
+        LowpassFilter(cutoff_frequency_hz=2800),
 
         # 2. Light saturation (soft clip, no bitcrush)
         Distortion(drive_db=5),
@@ -115,8 +115,8 @@ def apply_fx(input_path, output_path=None):
         # 3. Slapback delay
         Delay(delay_seconds=0.05, feedback=0.0, mix=0.15),
 
-        # 4. Small room reverb
-        Reverb(room_size=0.15, wet_level=0.08, dry_level=1.0, damping=0.7),
+        # 4. Medium room reverb (low damping = more bass in tail)
+        Reverb(room_size=0.4, wet_level=0.2, dry_level=1.0, damping=0.3),
     ])
     audio = board(audio, sr)
 

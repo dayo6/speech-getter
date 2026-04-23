@@ -124,6 +124,25 @@ def pick_samples(transcript_path):
         formatted = formatted[:MAX_TRANSCRIPT_CHARS] + "\n\n[TRANSCRIPT TRUNCATED]"
         print(f"  WARNING: Transcript truncated from {len(formatted)} chars to {MAX_TRANSCRIPT_CHARS}")
 
+    # Load emotion data if available
+    clip_dir = os.path.dirname(transcript_path)
+    emotions_path = os.path.join(clip_dir, "emotions.json")
+    emotion_block = ""
+    if os.path.exists(emotions_path):
+        with open(emotions_path, "r", encoding="utf-8") as f:
+            emotions = json.load(f)
+        top_windows = emotions.get("top_windows", [])
+        if top_windows:
+            lines = ["EMOTION ANALYSIS (from audio model — use this to find the hardest-hitting moments):"]
+            lines.append("These time ranges scored highest for aggressive intensity (high energy + dominance + negative emotion):\n")
+            for i, w in enumerate(top_windows[:8], 1):
+                lines.append(f"  {i}. [{w['start']:.1f}s - {w['end']:.1f}s] "
+                             f"intensity={w['avg_intensity']:.3f} "
+                             f"(arousal={w['avg_arousal']:.2f}, dominance={w['avg_dominance']:.2f}, valence={w['avg_valence']:.2f})")
+            lines.append("\nPRIORITIZE picking samples from these high-intensity windows.")
+            emotion_block = "\n".join(lines)
+            print(f"  Emotion data: {len(top_windows)} intensity windows found")
+
     print(f"\n  Transcript preview:\n{formatted[:500]}...")
     print(f"  Clip duration: {clip_duration:.0f}s — picking {max_picks} samples\n")
 
@@ -133,15 +152,26 @@ Below is a transcript. Each line shows the speaker and what they said.
 
 {formatted}
 
+{emotion_block}
+
 You MUST find exactly {max_picks} samples from it. Spread your picks across the full transcript — don't cluster them all in one section.
 
 What makes a great beat intro sample:
 
+SURENO RAPPERS (if any of these artists appear in the transcript, PRIORITIZE their lines):
+949PAYA$0, WsLoc, Lil Travieso, Lefty Gunplay, Yung Raq, Chito Rana$, Lil Cuete, Silencer,
+Dro Ralph Lauren, Mr. Capone-E, Mr. Criminal, Mr. Sancho, Mr. Shadow, OG PlayBoy, Conejo,
+Sad Boy, Ms Krazie, Smiley Lowks, Demon Tha Don, Swifty Blue, King Lil G, Young Dopey,
+Toker from Brownside, Lil Rob, GANGSTA L, Cali Life Style, SURZEE, Bugzy, Duende, Dusty
+
 TONE:
-- Someone talking real shit. Raw, aggressive, unfiltered.
-- Loose grammar, verbal fillers that add rhythm ("you feel me", "straight up", "on God") are GOOD.
+- Someone talking real shit. Raw, aggressive, unfiltered. Chicano/Sureno energy is ideal.
+- Loose grammar, verbal fillers that add rhythm ("you feel me", "straight up", "on God", "simon", "orale") are GOOD.
 - Do NOT censor or clean up any language — quote it exactly as-is, including profanity.
 - Yelling is GREAT. Heated is GREAT.
+- Anti-cop lines are GREAT — "fuck 12", disrespecting police, going off on law enforcement.
+- Dissing rival gangs, mocking opps, talking down on enemies is GREAT.
+- Cops should NEVER be portrayed positively. If a cop is speaking, only pick lines where they sound aggressive/threatening (makes them look bad).
 
 STYLES TO LOOK FOR:
 1. Graphic first-person accounts of violence. Describing what happened in detail,
@@ -155,6 +185,8 @@ STYLES TO LOOK FOR:
 6. "The Confrontation" — face-to-face beef, someone getting checked, the moment right before it pops off.
    "Say it to my face." "What you gonna do about it?" One person dominating the other.
    Caught-on-camera energy, real beef, real stakes. Only use the dominant speaker's lines.
+7. "Opp Diss" — mocking rival gangs, laughing at enemies, disrespecting the other side.
+   Talking about what happened to them, where they at now, how they fell off.
 
 THE RAW FRAGMENT — do NOT look for complete stories:
 - Look for a single heavy thought that starts abruptly and ends feeling cut off.

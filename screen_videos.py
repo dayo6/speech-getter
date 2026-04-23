@@ -142,8 +142,13 @@ For each one, decide if it contains speech that would work as a dark, aggressive
 
 WHAT I'M LOOKING FOR:
 - Raw, unfiltered speech about: violence, street life, confrontations, threats, hustle, paranoia
+- Chicano/Sureno/Latino vibes are PREFERRED — barrio talk, varrio politics, Mexican-American street culture
+- Anti-cop energy — disrespecting police, going off on law enforcement, "fuck 12" attitude
+- Dissing rival gangs, mocking opps, talking down on enemies
 - Heated moments, arguments, someone going off, real talk with conviction
 - NOT music, NOT singing, NOT scripted content, NOT generic commentary
+- REJECT videos where cops are shown in a positive/heroic light
+- REJECT videos that are pro-law-enforcement or sympathetic to police
 
 For each video, respond YES or NO and give a one-line reason.
 
@@ -224,7 +229,7 @@ def main():
     parser = argparse.ArgumentParser(description="Pre-screen YouTube videos for sample material")
     parser.add_argument("intros_json", help="Path to intros.json with search queries")
     parser.add_argument("--output", "-o", default=None, help="Output path for screened.json")
-    parser.add_argument("--max-per-query", type=int, default=20, help="Max YouTube results per query")
+    parser.add_argument("--max-per-query", type=int, default=10, help="Max YouTube results per query")
     parser.add_argument("--batch-size", type=int, default=10, help="Videos per LLM screening batch")
     args = parser.parse_args()
 
@@ -298,7 +303,12 @@ def main():
 
             time.sleep(1)  # delay between LLM calls
 
-    # Save screened results
+        # Save after each query so progress isn't lost on crash
+        with open(output_path, "w", encoding="utf-8") as f:
+            json.dump(all_candidates, f, indent=2, ensure_ascii=False)
+        print(f"  Saved {len(all_candidates)} candidates so far to {output_path}")
+
+    # Final save
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(all_candidates, f, indent=2, ensure_ascii=False)
 

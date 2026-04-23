@@ -13,18 +13,22 @@ if not OPENROUTER_API_KEY:
     OPENROUTER_API_KEY = input("Enter your OpenRouter API key: ").strip()
 
 
-PROMPT = """You are a YouTube search query generator for a dark Chicano type beat producer.
+PROMPT = """You are a YouTube search query generator for a dark Sureno type beat producer.
 
 I need YouTube search queries that will surface videos containing raw, unfiltered speech
-that would work as intro samples over dark, aggressive beats.
+that would work as intro samples for dark, aggressive beats.
 
 I'm NOT looking for specific videos — I want SEARCH QUERIES that I can paste into YouTube
 to find the kind of content I need. The more specific and creative the query, the better.
 
 CONTENT I'M LOOKING FOR:
+- Chicano/Sureno/Latino culture FIRST. Mexican-American street life, barrio confrontations,
+  varrio politics, Sureno rap artists going off. This is the PRIMARY focus.
 - Real altercations, confrontations, arguments, and heated moments caught on camera.
 - Livestream rants, IG live beefs, Facebook live arguments, studio sessions with wild talk.
-- Chicano/Latino rap artists talking shit, going off, or confronting people.
+- Anti-police sentiment — people going off on cops, disrespecting law enforcement,
+  confronting officers, ranting about crooked police, "fuck 12" energy.
+- Rival gang disrespect — talking down on opps, mocking rivals, disrespecting enemies.
 - Hood viral moments — someone getting checked, called out, or going crazy on camera.
 - NO movies, NO TV shows, NO music, NO scripted content.
 
@@ -32,28 +36,43 @@ WHAT MAKES A GOOD SEARCH QUERY:
 - Specific enough to surface niche content, not generic results
 - Includes modifiers: "confronts", "IG live", "heated", "argument", "fight", "calls out"
 - Targets specific scenes: someone getting confronted, an artist going off in the studio,
-  a heated exchange between two people, someone ranting about opps/fakes/snitches
+  a heated exchange between two people, someone ranting about opps/fakes/snitches/cops
 
-CATEGORIES TO COVER (generate queries across ALL of these):
+SURENO RAPPERS TO USE IN QUERIES (use these names to build targeted searches — interviews, lives, beefs, studio sessions):
+949PAYA$0, WsLoc, Lil Travieso, Lefty Gunplay, Yung Raq, Chito Rana$, Lil Cuete, Silencer,
+Dro Ralph Lauren, Mr. Capone-E, Mr. Criminal, Mr. Sancho, Ms. Sancha, Royal-T, Mr. Shadow,
+OG PlayBoy, Conejo, Joka Boy, Lo Boy, Biggie, Sad Boy, Ms Krazie, Smiley Lowks, Demon Tha Don,
+Creeper, Dusty, Shakewell, Duende, Lil Rob, GANGSTA L, Swifty Blue, Toker from Brownside,
+Wicked from Brownside, King Lil G, Young Dopey, Silent200, Smiley Lokz, Bugzy, T-Dre,
+Delux, Cali Life Style, SURZEE
+
+CATEGORIES TO COVER (generate queries across ALL of these — at least HALF should be Chicano/Sureno specific):
+- Chicano/Sureno rap artists from the list above — interviews, IG lives, beefs, studio sessions, confrontations
+- Barrio confrontations, varrio politics, Mexican-American street life caught on camera
+- Dissing rival gangs, mocking opps, talking down on enemies
 - Hood altercations and confrontations caught on camera
 - Instagram/Facebook live beefs, rants, and arguments
-- Chicano rap artists talking wild in studios, interviews, or livestreams
 - Someone getting checked/pressed/called out on camera
-- Viral hood moments — heated exchanges, someone going crazy
-- Gang-related confrontations and callouts
-- Studio session reactions — artists/producers reacting to hard beats
 - Street arguments that went viral
-- People ranting about snitches, fakes, opps, haters
+- People ranting about snitches, fakes, opps, haters, police
 
 Respond ONLY with a valid JSON array of objects. No markdown, no code fences.
 Each object must have:
-{
+{{
   "query": "the exact YouTube search query to paste",
   "category": "what kind of content this should surface",
   "why": "what kind of speech/moment this query should find"
-}
+}}
 
-Give me 30 search queries."""
+Give me {num_queries} search queries."""
+
+# Parse flags early so we can use --num-queries in the prompt
+parser = argparse.ArgumentParser()
+parser.add_argument("--output", "-o", type=str, default=None, help="Output file path")
+parser.add_argument("--num-queries", "-n", type=int, default=30, help="Number of search queries to generate")
+args = parser.parse_args()
+
+PROMPT = PROMPT.format(num_queries=args.num_queries)
 
 response = requests.post(
     "https://openrouter.ai/api/v1/chat/completions",
@@ -135,11 +154,6 @@ for i, s in enumerate(suggestions, 1):
         "vibe": "DARK",
         "why_it_works": s.get("why", ""),
     })
-
-# Parse output flag
-parser = argparse.ArgumentParser()
-parser.add_argument("--output", "-o", type=str, default=None, help="Output file path")
-args = parser.parse_args()
 
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 output_file = args.output or f"intros_{timestamp}.json"

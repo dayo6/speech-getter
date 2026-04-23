@@ -105,6 +105,8 @@ def main():
                         help="Force start from step N (1-7)")
     parser.add_argument("--run", type=str, default=None,
                         help="Use an existing run folder")
+    parser.add_argument("-n", "--num-queries", type=int, default=10,
+                        help="Number of search queries (passed to get_intros and screen_videos)")
     args = parser.parse_args()
 
     from_step = args.from_step
@@ -121,7 +123,7 @@ def main():
             from_step = 1
 
     if from_step is not None and from_step <= 1 and not run_dir:
-        run_step(1, "Get intro suggestions (LLM)", [PYTHON, "get_intros.py"])
+        run_step(1, "Get intro suggestions (LLM)", [PYTHON, "get_intros.py", "-n", str(args.num_queries)])
 
         intros_files = sorted(glob.glob("intros_*.json"), reverse=True)
         intros_files = [f for f in intros_files if os.path.dirname(f) == ""]
@@ -161,7 +163,7 @@ def main():
         if not os.path.exists(intros_path):
             print(f"  intros.json not found in {run_dir}")
             raise SystemExit(1)
-        run_step(2, "Screen videos (captions + LLM)", [PYTHON, "screen_videos.py", intros_path, "-o", screened_path])
+        run_step(2, "Screen videos (captions + LLM)", [PYTHON, "screen_videos.py", intros_path, "-o", screened_path, "--max-per-query", str(args.num_queries)])
 
     # Step 3: Download only screened clips
     if from_step <= 3:
@@ -172,6 +174,10 @@ def main():
     # Step 4: Transcribe with Whisper
     if from_step <= 4:
         run_step(4, "Transcribe audio (Whisper)", [PYTHON, "transcribe.py", run_dir])
+
+    # Step 4b: Emotion scoring
+    if from_step <= 5:
+        run_step("4b", "Emotion scoring (wav2vec2)", [PYTHON, "emotion_score.py", run_dir])
 
     # Step 5: Pick samples (LLM)
     if from_step <= 5:
