@@ -290,7 +290,7 @@ Respond ONLY with a valid JSON array, no markdown, no code fences:
 
     try:
         picks = json.loads(content)
-    except json.JSONDecodeError:
+    except (json.JSONDecodeError, RecursionError):
         print(f"  SKIPPED — bad JSON response: {content[:200]}")
         return None
 
@@ -316,7 +316,11 @@ Respond ONLY with a valid JSON array, no markdown, no code fences:
     clip_dir = os.path.dirname(transcript_path)
     for i, pick in enumerate(picks, 1):
         rating = pick.get("rating", 0)
-        out_path = os.path.join(clip_dir, f"sample_{i}_{rating}of10.json")
+        # Build a short slug from the first few words of the text
+        text = pick.get("text", "")
+        words = re.sub(r"[^\w\s]", "", text).split()[:6]
+        slug = "_".join(w.lower() for w in words)[:40]
+        out_path = os.path.join(clip_dir, f"sample_{i}_{rating}of10_{slug}.json")
         with open(out_path, "w", encoding="utf-8") as f:
             json.dump(pick, f, indent=2, ensure_ascii=False)
 

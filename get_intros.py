@@ -22,29 +22,33 @@ I'm NOT looking for specific videos — I want SEARCH QUERIES that I can paste i
 to find the kind of content I need. The more specific and creative the query, the better.
 
 CONTENT I'M LOOKING FOR:
-- Chicano/Sureno/Latino culture FIRST. Mexican-American street life, barrio confrontations,
-  varrio politics, Sureno rap artists going off. This is the PRIMARY focus.
 - Real altercations, confrontations, arguments, and heated moments caught on camera.
 - Livestream rants, IG live beefs, Facebook live arguments, studio sessions with wild talk.
+- Chicano/Latino rap artists talking shit, going off, or confronting people.
 - Anti-police sentiment — people going off on cops, disrespecting law enforcement,
   confronting officers, ranting about crooked police, "fuck 12" energy.
-- Rivals disrespected — talking down on opps, mocking rivals, disrespecting enemies.
+- Rival gang disrespect — talking down on opps, mocking rivals, disrespecting enemies.
 - Hood viral moments — someone getting checked, called out, or going crazy on camera.
 - NO movies, NO TV shows, NO music, NO scripted content.
 
 WHAT MAKES A GOOD SEARCH QUERY:
 - Specific enough to surface niche content, not generic results
 - Includes modifiers: "confronts", "IG live", "heated", "argument", "fight", "calls out"
-- Targets specific scenes, including but not excluded to: someone getting confronted, someone going off in the studio,
-  a heated exchange, someone ranting about opps/fakes/snitches/cops
+- Targets specific scenes: someone getting confronted, an artist going off in the studio,
+  a heated exchange between two people, someone ranting about opps/fakes/snitches/cops
 
-CATEGORIES TO COVER (generate queries across ALL of these — at least HALF should be Chicano/Sureno specific):
-- Chicano/Sureno rap artists from the list above — interviews, IG lives, beefs, studio sessions, confrontations
-- Barrio confrontations, varrio politics, Mexican-American street life caught on camera
-- Dissing rival gangs, mocking opps, talking down on enemies
+CATEGORIES TO COVER (generate queries across ALL of these):
 - Hood altercations and confrontations caught on camera
+- Underground hood vlogs — raw street footage, neighborhood walk-throughs, local beef on camera, unfiltered street life
+- Jail calls — people calling from jail going off, making threats, dropping real talk, exposing people
 - Instagram/Facebook live beefs, rants, and arguments
+- Heated street interviews and podcast moments — someone snapping, going off, walking out, confronting the interviewer
+- Chicano rap artists talking wild in studios, interviews, or livestreams
 - Someone getting checked/pressed/called out on camera
+- Viral hood moments — heated exchanges, someone going crazy
+- Gang-related confrontations and callouts
+- People going off on cops, disrespecting police, confronting officers on camera
+- Dissing rival gangs, mocking opps, talking down on enemies
 - Street arguments that went viral
 - People ranting about snitches, fakes, opps, haters, police
 
@@ -56,6 +60,9 @@ Each object must have:
   "why": "what kind of speech/moment this query should find"
 }}
 
+PREVIOUSLY USED QUERIES (do NOT repeat or closely paraphrase any of these):
+{used_queries}
+
 Give me {num_queries} search queries."""
 
 # Parse flags early so we can use --num-queries in the prompt
@@ -64,7 +71,32 @@ parser.add_argument("--output", "-o", type=str, default=None, help="Output file 
 parser.add_argument("--num-queries", "-n", type=int, default=30, help="Number of search queries to generate")
 args = parser.parse_args()
 
-PROMPT = PROMPT.format(num_queries=args.num_queries)
+# Load all previously used search queries from past runs
+def load_used_queries():
+    queries = set()
+    runs_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "runs")
+    if not os.path.isdir(runs_dir):
+        return queries
+    for run in os.listdir(runs_dir):
+        for fname in ("intros.json", "screened.json"):
+            fpath = os.path.join(runs_dir, run, fname)
+            if os.path.exists(fpath):
+                try:
+                    with open(fpath, "r", encoding="utf-8") as f:
+                        items = json.load(f)
+                    for item in items:
+                        q = item.get("youtube_search") or item.get("query", "")
+                        if q:
+                            queries.add(q.strip())
+                except Exception:
+                    pass
+    return queries
+
+used = load_used_queries()
+used_block = "\n".join(f"- {q}" for q in sorted(used)) if used else "(none yet)"
+print(f"Loaded {len(used)} previously used queries to avoid.")
+
+PROMPT = PROMPT.format(num_queries=args.num_queries, used_queries=used_block)
 
 response = requests.post(
     "https://openrouter.ai/api/v1/chat/completions",

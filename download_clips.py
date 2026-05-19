@@ -99,8 +99,10 @@ def main():
             source = s.get("source_title", f"clip_{i}")
             vibe = s.get("vibe", "?")
 
-            if not query:
-                print(f"  {i:2}. SKIP — no youtube_search field")
+            # Use URL directly if available (from screen_videos.py), else fall back to search
+            url = s.get("url", "")
+            if not url and not query:
+                print(f"  {i:2}. SKIP — no url or youtube_search field")
                 continue
 
             # Each clip gets its own subfolder
@@ -115,16 +117,20 @@ def main():
                 continue
 
             print(f"\n  {i:2}. [{vibe}] {source}")
-            print(f"      Searching: {query}")
 
             try:
-                url = get_top_youtube_url(driver, query, archive)
-                if not url:
-                    print(f"      No results found")
-                    results.append({**s, "youtube_url": None, "filename": None, "status": "no results"})
-                    continue
+                if url:
+                    print(f"      Using screened URL: {url}")
+                else:
+                    print(f"      Searching: {query}")
+                    url = get_top_youtube_url(driver, query, archive)
+                    if not url:
+                        print(f"      No results found")
+                        results.append({**s, "youtube_url": None, "filename": None, "status": "no results"})
+                        continue
+
                 vid_id = extract_video_id(url)
-                print(f"      Found: {url}")
+                print(f"      Video ID: {vid_id}")
 
                 # Get video metadata before downloading
                 yt_dlp = os.path.join(os.path.dirname(sys.executable), "yt-dlp")
